@@ -289,22 +289,37 @@ export const UploadPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ai-background via-white to-ai-muted/30">
+    <div className="min-h-screen bg-gradient-background relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-mesh"></div>
       <Navigation />
       
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
+      <div className="relative z-10 container mx-auto px-4 py-8 max-w-6xl space-y-8">
+        {/* Header */}
+        <div className="text-center mb-8 animate-fade-up">
+          <div className="w-20 h-20 mx-auto bg-gradient-primary rounded-3xl flex items-center justify-center mb-6 shadow-elevated animate-float">
+            <Upload className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-3">
+            Upload & Manage Documents
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Add documents to your personal knowledge base for intelligent querying. 
+            Upload files or input text directly with voice support.
+          </p>
+        </div>
+
         {/* Upload Section */}
-        <Card className="p-8 bg-gradient-to-br from-white/80 to-ai-muted/50 backdrop-blur-sm border-ai-primary/20 shadow-card hover:shadow-elevated transition-all duration-300">
+        <Card className="p-8 bg-gradient-card backdrop-blur-xl border-ai-primary/20 shadow-elevated hover:shadow-card transition-all duration-300">
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-ai-primary to-ai-secondary rounded-2xl flex items-center justify-center shadow-gentle">
+              <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-2xl flex items-center justify-center shadow-gentle">
                 <Upload className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-semibold bg-gradient-to-r from-ai-primary to-ai-secondary bg-clip-text text-transparent">
-                Upload Personal Documents
+              <h3 className="text-2xl font-semibold bg-gradient-primary bg-clip-text text-transparent">
+                Upload Documents
               </h3>
               <p className="text-muted-foreground">
-                Add documents to your personal knowledge base for intelligent querying
+                Add files to your personal knowledge base
               </p>
             </div>
 
@@ -348,13 +363,13 @@ export const UploadPage: React.FC = () => {
         </Card>
 
         {/* Text & Speech Input Section */}
-        <Card className="p-8 bg-gradient-to-br from-white/80 to-ai-muted/50 backdrop-blur-sm border-ai-primary/20 shadow-card hover:shadow-elevated transition-all duration-300">
+        <Card className="p-8 bg-gradient-card backdrop-blur-xl border-ai-primary/20 shadow-elevated hover:shadow-card transition-all duration-300">
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-ai-secondary to-ai-accent rounded-2xl flex items-center justify-center shadow-gentle">
+              <div className="w-16 h-16 mx-auto bg-gradient-secondary rounded-2xl flex items-center justify-center shadow-gentle">
                 <Type className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-semibold bg-gradient-to-r from-ai-secondary to-ai-accent bg-clip-text text-transparent">
+              <h3 className="text-2xl font-semibold bg-gradient-secondary bg-clip-text text-transparent">
                 Add Content by Text or Voice
               </h3>
               <p className="text-muted-foreground">
