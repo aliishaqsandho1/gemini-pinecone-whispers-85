@@ -41,7 +41,7 @@ interface ExpenseSummary {
   paymentMethods: Array<{ method: string; amount: number; count: number }>;
 }
 
-const BASE_URL = 'http://usman-hardware.local/wp-json/ims/v1';
+const BASE_URL = 'http://usman.hardware/wp-json/ims/v1';
 
 export default function ExpenseTracking() {
   const { toast } = useToast();

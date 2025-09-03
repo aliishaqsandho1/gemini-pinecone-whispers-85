@@ -247,7 +247,7 @@ export const OrderDetailsModal = ({ open, onOpenChange, order, onOrderUpdated }:
         console.log('Updating payment method from', order.paymentMethod, 'to:', editValues.paymentMethod);
         
         // Use the existing details endpoint for payment method updates
-        const response = await fetch(`http://usman-hardware.local/wp-json/ims/v1/sales/${order.id}/details`, {
+        const response = await fetch(`http://usman.hardware/wp-json/ims/v1/sales/${order.id}/details`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -270,7 +270,7 @@ export const OrderDetailsModal = ({ open, onOpenChange, order, onOrderUpdated }:
         const updateData = { customerId: editValues.customerId };
         console.log('Updating customer to:', editValues.customerId);
         
-        const response = await fetch(`http://usman-hardware.local//wp-json/ims/v1/sales/${order.id}/details`, {
+        const response = await fetch(`http://usman.hardware/wp-json/ims/v1/sales/${order.id}/details`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData)

@@ -1,4 +1,4 @@
-const BASE_URL = 'http://usman-hardware.local/wp-json/ims/v1';
+const BASE_URL = 'http://usman.hardware/wp-json/ims/v1';
 
 // API response types
 export interface ApiResponse<T> {
