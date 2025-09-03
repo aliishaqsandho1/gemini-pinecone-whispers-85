@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, User, X, Plus, Minus, UserPlus, Edit2, CreditCard, ChevronRight, ChevronLeft } from "lucide-react";
+import { ShoppingCart, User, X, Plus, Minus, UserPlus, Edit2, CreditCard, ChevronRight, ChevronLeft, Truck } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { suppliersApi } from '@/services/api';
 
 interface CartItem {
   productId: number;
@@ -17,6 +19,10 @@ interface CartItem {
   sku: string;
   unit: string;
   adjustedPrice?: number; // For price negotiations
+  isOutsourced?: boolean;
+  supplierId?: number;
+  supplierName?: string;
+  outsourcingCost?: number;
 }
 
 interface CartSidebarProps {
@@ -37,6 +43,7 @@ interface CartSidebarProps {
   onRemoveFromCart: (productId: number) => void;
   onCheckout: () => void;
   onUpdateItemPrice?: (productId: number, newPrice: number) => void;
+  onUpdateItemOutsourcing?: (productId: number, outsourcingData: { isOutsourced: boolean; supplierId?: number; supplierName?: string; outsourcingCost?: number }) => void;
   onToggleCollapse?: () => void;
 }
 
@@ -58,11 +65,30 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
   onRemoveFromCart,
   onCheckout,
   onUpdateItemPrice,
+  onUpdateItemOutsourcing,
   onToggleCollapse
 }) => {
   const [priceEditingItem, setPriceEditingItem] = useState<number | null>(null);
   const [tempPrice, setTempPrice] = useState<string>("");
   const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
+  const [isOutsourcingModalOpen, setIsOutsourcingModalOpen] = useState(false);
+  const [outsourcingItemId, setOutsourcingItemId] = useState<number | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState<string>("");
+  const [outsourcingCost, setOutsourcingCost] = useState<string>("");
+
+  // Fetch suppliers for outsourcing
+  const { data: suppliersData } = useQuery({
+    queryKey: ['suppliers-all'],
+    queryFn: () => suppliersApi.getAll({ limit: 100 }),
+    enabled: isOutsourcingModalOpen,
+  });
+
+  const suppliers = suppliersData?.data?.suppliers || [];
+  const filteredSuppliers = suppliers.filter((supplier: any) =>
+    supplier.name?.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+    supplier.contactPerson?.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+  );
 
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
@@ -88,6 +114,50 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
   const handlePriceCancel = () => {
     setPriceEditingItem(null);
     setTempPrice("");
+  };
+
+  const handleOutsourcingOpen = (productId: number) => {
+    const item = cart.find(i => i.productId === productId);
+    setOutsourcingItemId(productId);
+    if (item?.isOutsourced) {
+      setSelectedSupplier(item.supplierId ? { id: item.supplierId, name: item.supplierName } : null);
+      setOutsourcingCost(item.outsourcingCost?.toString() || "");
+    } else {
+      setSelectedSupplier(null);
+      setOutsourcingCost("");
+    }
+    setIsOutsourcingModalOpen(true);
+  };
+
+  const handleOutsourcingSave = () => {
+    if (!outsourcingItemId || !onUpdateItemOutsourcing) return;
+    
+    if (selectedSupplier && outsourcingCost) {
+      onUpdateItemOutsourcing(outsourcingItemId, {
+        isOutsourced: true,
+        supplierId: selectedSupplier.id,
+        supplierName: selectedSupplier.name,
+        outsourcingCost: parseFloat(outsourcingCost)
+      });
+    } else {
+      onUpdateItemOutsourcing(outsourcingItemId, {
+        isOutsourced: false
+      });
+    }
+    
+    setIsOutsourcingModalOpen(false);
+    setOutsourcingItemId(null);
+    setSelectedSupplier(null);
+    setOutsourcingCost("");
+    setSupplierSearchTerm("");
+  };
+
+  const handleOutsourcingCancel = () => {
+    setIsOutsourcingModalOpen(false);
+    setOutsourcingItemId(null);
+    setSelectedSupplier(null);
+    setOutsourcingCost("");
+    setSupplierSearchTerm("");
   };
 
   // Filter customers based on search term
@@ -267,14 +337,25 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <p className="font-medium text-xs text-card-foreground">{item.name}</p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">
                           Original: PKR {item.price.toLocaleString()} / {item.unit}
                         </p>
                         {item.adjustedPrice && item.adjustedPrice !== item.price && (
                           <Badge variant="secondary" className="text-xs">Negotiated</Badge>
                         )}
+                        {item.isOutsourced && (
+                          <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300">
+                            <Truck className="h-2 w-2 mr-1" />
+                            Outsourced
+                          </Badge>
+                        )}
                       </div>
+                      {item.isOutsourced && item.supplierName && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Supplier: {item.supplierName} • Cost: PKR {item.outsourcingCost?.toLocaleString()} per {item.unit}
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
@@ -334,7 +415,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
@@ -357,6 +438,24 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                     <p className="font-semibold text-blue-600 text-xs">
                       PKR {((item.adjustedPrice || item.price) * item.quantity).toLocaleString()}
                     </p>
+                  </div>
+
+                  {/* Outsourcing Button */}
+                  <div className="mt-2 flex justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOutsourcingOpen(item.productId)}
+                      className={`h-6 text-xs px-2 ${
+                        item.isOutsourced 
+                          ? "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40" 
+                          : "bg-background hover:bg-muted"
+                      }`}
+                      title={item.isOutsourced ? "Edit outsourcing" : "Set as outsourced"}
+                    >
+                      <Truck className="h-3 w-3 mr-1" />
+                      {item.isOutsourced ? "Edit Outsourcing" : "Outsource"}
+                    </Button>
                   </div>
                 </div>
               ))
@@ -426,6 +525,108 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Outsourcing Modal */}
+      <Dialog open={isOutsourcingModalOpen} onOpenChange={setIsOutsourcingModalOpen}>
+        <DialogContent className="max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Product Outsourcing
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Configure outsourcing details for this product
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Select Supplier</Label>
+              <Input
+                placeholder="Search suppliers..."
+                value={supplierSearchTerm}
+                onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                className="bg-background border-input"
+              />
+              
+              {supplierSearchTerm && (
+                <div className="max-h-40 overflow-y-auto space-y-2 border border-border rounded-lg p-2">
+                  {filteredSuppliers.length > 0 ? (
+                    filteredSuppliers.map((supplier) => (
+                      <div
+                        key={supplier.id}
+                        className={`p-2 border rounded cursor-pointer transition-colors ${
+                          selectedSupplier?.id === supplier.id
+                            ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300"
+                            : "hover:bg-muted/50 border-border"
+                        }`}
+                        onClick={() => {
+                          setSelectedSupplier(supplier);
+                          setSupplierSearchTerm(supplier.name);
+                        }}
+                      >
+                        <p className="font-medium text-sm">{supplier.name}</p>
+                        {supplier.contactPerson && (
+                          <p className="text-xs text-muted-foreground">{supplier.contactPerson}</p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-2 text-muted-foreground text-sm">
+                      No suppliers found
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {selectedSupplier && !supplierSearchTerm && (
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 rounded">
+                  <p className="font-medium text-sm">{selectedSupplier.name}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedSupplier(null);
+                      setSupplierSearchTerm("");
+                    }}
+                    className="h-4 w-4 p-0 mt-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Label>Outsourcing Cost per Unit (PKR)</Label>
+              <Input
+                type="number"
+                placeholder="Enter cost per unit"
+                value={outsourcingCost}
+                onChange={(e) => setOutsourcingCost(e.target.value)}
+                className="bg-background border-input"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleOutsourcingCancel}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleOutsourcingSave}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={selectedSupplier && outsourcingCost ? false : true}
+              >
+                {selectedSupplier && outsourcingCost ? "Save Outsourcing" : "Remove Outsourcing"}
+              </Button>
             </div>
           </div>
         </DialogContent>
